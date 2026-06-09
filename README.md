@@ -1,49 +1,61 @@
-# Email Open Tracker — Node.js Demo
+# Email Open Tracker
 
-A minimal demo showing how email open tracking works using a **1×1 tracking pixel**.
+Pixel-based email open tracking server. Deploy to Render for a permanent public HTTPS URL that Gmail's image proxy can reach.
 
 ---
 
-## Quick Start
+## Deploy to Render (5 minutes)
+
+### Step 1 — Push to GitHub
+```bash
+git init
+git add .
+git commit -m "initial commit"
+# Create a repo on github.com, then:
+git remote add origin https://github.com/YOUR_USER/email-tracker.git
+git push -u origin main
+```
+
+### Step 2 — Deploy on Render
+1. Go to [render.com](https://render.com) → **New → Web Service**
+2. Connect your GitHub repo
+3. Render auto-detects Node.js. Settings will be:
+   - **Build command:** `npm install`
+   - **Start command:** `npm start`
+4. Click **Create Web Service**
+5. Wait ~2 minutes. You'll get a URL like:
+   `https://email-tracker-xxxx.onrender.com`
+
+### Step 3 — Set environment variables on Render
+Go to your service → **Environment** tab → add these:
+
+| Key | Value |
+|---|---|
+| `BASE_URL` | `https://email-tracker-xxxx.onrender.com` |
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | `you@gmail.com` |
+| `SMTP_PASS` | your Gmail App Password |
+
+> **Gmail App Password:** Go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) → generate a 16-char password for "Mail".
+
+### Step 4 — Send a tracked email
+```
+https://email-tracker-xxxx.onrender.com/send?to=recipient@gmail.com
+```
+
+Open the email → check Render logs → you'll see the open event fire. 🎉
+
+---
+
+## Local Development
 
 ```bash
+cp .env.example .env
+# Fill in your values in .env
 npm install
 node server.js
 ```
-
-Then open: http://localhost:3000
-
----
-
-## How to Demo
-
-### Option A — Simulate an open locally (no email needed)
-1. Start the server: `node server.js`
-2. Open in browser: http://localhost:3000/pixel/my-test-email
-3. Watch the terminal log the "open" event
-
-### Option B — Send a real tracked email via Ethereal (fake inbox, no config needed)
-1. Start the server: `node server.js`
-2. Open: http://localhost:3000/send?to=anyone@example.com
-3. Copy the **Ethereal preview URL** from the JSON response (or terminal)
-4. Open that URL in a browser — it simulates the email being opened
-5. Watch the terminal fire the open notification
-
-### Option C — Send to a real inbox + expose via ngrok
-```bash
-# Terminal 1 — start the tracker
-node server.js
-
-# Terminal 2 — expose it
-npx ngrok http 3000
-# Copy the https://xxx.ngrok-free.app URL
-
-# Terminal 1 — restart with public URL
-BASE_URL=https://xxx.ngrok-free.app node server.js
-```
-Then open: `http://localhost:3000/send?to=your-real@email.com`
-
-When you open the email on your phone or another client, the terminal fires immediately.
 
 ---
 
@@ -53,27 +65,11 @@ When you open the email on your phone or another client, the terminal fires imme
 |---|---|
 | `GET /` | Usage guide |
 | `GET /send?to=EMAIL&subject=TEXT` | Send a tracked email |
-| `GET /pixel/:emailId` | Tracking pixel (logs an open) |
-| `GET /stats` | JSON log of all tracked opens |
+| `GET /pixel/:emailId` | Tracking pixel — logs an open |
+| `GET /stats` | JSON of all tracked opens |
 
 ---
 
-## SMTP Config (for real email sending)
-
-Set environment variables or edit CONFIG in server.js:
-
-```bash
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=you@gmail.com
-SMTP_PASS=your-app-password   # Gmail: use App Password, not account password
-BASE_URL=https://your-ngrok-url.app
-```
-
----
-
-## Notes
-
-- **Apple Mail Privacy Protection** (iOS 15+) pre-fetches images — you'll see opens even for Apple Mail users who never read it
-- **Image blocking** — Outlook and some corporate clients block images by default, so real opens may go undetected
-- **Link tracking** is more reliable than pixel tracking for confirming real engagement
+## View logs on Render
+Render dashboard → your service → **Logs** tab.
+Every email open fires a console log there in real time.

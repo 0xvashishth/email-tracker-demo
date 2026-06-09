@@ -1,3 +1,18 @@
+// Load .env file for local development (ignored in production)
+try { require("fs").existsSync(".env") && require("child_process")
+  .execSync("npm list dotenv 2>/dev/null | grep dotenv") &&
+  require("dotenv").config(); } catch (_) {}
+// Simpler: just read .env manually if present
+try {
+  const fs = require("fs");
+  if (fs.existsSync(".env")) {
+    fs.readFileSync(".env", "utf8").split("\n").forEach(line => {
+      const [k, ...v] = line.replace(/\s*#.*/, "").split("=");
+      if (k && v.length) process.env[k.trim()] = v.join("=").trim();
+    });
+  }
+} catch (_) {}
+
 /**
  * Email Open Tracker
  * ------------------
@@ -12,7 +27,6 @@
  *   npx ngrok http 3000
  *   Then set BASE_URL to your ngrok URL in .env or config below.
  */
-require('dotenv').config();
 
 const express = require("express");
 const nodemailer = require("nodemailer");
@@ -33,8 +47,8 @@ const CONFIG = {
     port: Number(process.env.SMTP_PORT) || 587,
     secure: false,
     auth: {
-      user: process.env.SMTP_USER || "austen.rippin@ethereal.email", // fill in or use .env
-      pass: process.env.SMTP_PASS || "1P5MJy1RPDySwFvjx8", // fill in or use .env
+      user: process.env.SMTP_USER || "", // fill in or use .env
+      pass: process.env.SMTP_PASS || "",
     },
   },
 };
@@ -111,8 +125,7 @@ app.get("/pixel/:emailId", (req, res) => {
 app.get("/send", async (req, res) => {
   const to      = req.query.to;
   const subject = req.query.subject || "Hello from Email Tracker";
-  console.log("Send request received:", { to, subject });
-  console.log("Current SMTP config:", CONFIG.SMTP);
+
   if (!to) {
     return res.status(400).json({ error: "Pass ?to=email@example.com" });
   }

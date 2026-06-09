@@ -12,6 +12,7 @@
  *   npx ngrok http 3000
  *   Then set BASE_URL to your ngrok URL in .env or config below.
  */
+require('dotenv').config();
 
 const express = require("express");
 const nodemailer = require("nodemailer");
@@ -32,8 +33,8 @@ const CONFIG = {
     port: Number(process.env.SMTP_PORT) || 587,
     secure: false,
     auth: {
-      user: process.env.SMTP_USER || "", // fill in or use .env
-      pass: process.env.SMTP_PASS || "",
+      user: process.env.SMTP_USER || "austen.rippin@ethereal.email", // fill in or use .env
+      pass: process.env.SMTP_PASS || "1P5MJy1RPDySwFvjx8", // fill in or use .env
     },
   },
 };
@@ -110,7 +111,8 @@ app.get("/pixel/:emailId", (req, res) => {
 app.get("/send", async (req, res) => {
   const to      = req.query.to;
   const subject = req.query.subject || "Hello from Email Tracker";
-
+  console.log("Send request received:", { to, subject });
+  console.log("Current SMTP config:", CONFIG.SMTP);
   if (!to) {
     return res.status(400).json({ error: "Pass ?to=email@example.com" });
   }

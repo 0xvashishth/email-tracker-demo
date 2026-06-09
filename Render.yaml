@@ -8,12 +8,22 @@ services:
       - key: PORT
         value: 3000
       - key: BASE_URL
-        sync: false # You fill this in Render dashboard after first deploy
-      - key: SMTP_HOST
         sync: false
-      - key: SMTP_PORT
+      # Gmail SMTP (real sending)
+      - key: GMAIL_HOST
+        value: smtp.gmail.com
+      - key: GMAIL_PORT
         value: 587
-      - key: SMTP_USER
+      - key: GMAIL_USER
         sync: false
-      - key: SMTP_PASS
+      - key: GMAIL_PASS
+        sync: false
+      # Ethereal (test / preview)
+      - key: ETHEREAL_HOST
+        value: smtp.ethereal.email
+      - key: ETHEREAL_PORT
+        value: 587
+      - key: ETHEREAL_USER
+        sync: false
+      - key: ETHEREAL_PASS
         sync: false

@@ -1,0 +1,1335 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Open Tracking — How It Works</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0a0a0f;
+        --surface: #111118;
+        --card: #16161f;
+        --border: #2a2a3a;
+        --text: #e2e2f0;
+        --muted: #7a7a9a;
+        --accent: #7c6aff;
+        --accent2: #00d4aa;
+        --accent3: #ff6b6b;
+        --amber: #f5a623;
+        --green: #22c55e;
+        --mono: "JetBrains Mono", "Fira Code", monospace;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+        font-size: 15px;
+        line-height: 1.7;
+      }
+
+      /* ── NAV ── */
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(10, 10, 15, 0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+        padding: 0 2rem;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        height: 56px;
+      }
+      .nav-logo {
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--accent);
+        letter-spacing: -0.3px;
+      }
+      .nav-links {
+        display: flex;
+        gap: 1.5rem;
+        list-style: none;
+      }
+      .nav-links a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 13px;
+        transition: color 0.2s;
+      }
+      .nav-links a:hover {
+        color: var(--text);
+      }
+
+      /* ── SECTIONS ── */
+      section {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 5rem 2rem;
+      }
+      section + section {
+        border-top: 1px solid var(--border);
+      }
+
+      /* ── HERO ── */
+      #hero {
+        text-align: center;
+        padding: 7rem 2rem 5rem;
+      }
+      h1 {
+        font-size: clamp(2rem, 5vw, 3.2rem);
+        font-weight: 800;
+        letter-spacing: -1px;
+        line-height: 1.15;
+        margin-bottom: 1rem;
+      }
+      h1 span {
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .hero-sub {
+        color: var(--muted);
+        font-size: 1.1rem;
+        max-width: 560px;
+        margin: 0 auto 2.5rem;
+      }
+
+      /* ── HEADINGS ── */
+      h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 0.5rem;
+      }
+      h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      .section-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 10px;
+      }
+      .section-sub {
+        color: var(--muted);
+        margin-bottom: 2.5rem;
+        font-size: 0.95rem;
+      }
+
+      /* ── CARDS ── */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+      }
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+      }
+
+      /* ── METHOD CARDS ── */
+      .method-card {
+        position: relative;
+        overflow: hidden;
+      }
+      .method-card .tag {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 2px 10px;
+        border-radius: 20px;
+        margin-bottom: 10px;
+      }
+      .tag-common {
+        background: rgba(124, 106, 255, 0.15);
+        color: var(--accent);
+      }
+      .tag-solid {
+        background: rgba(0, 212, 170, 0.15);
+        color: var(--accent2);
+      }
+      .tag-manual {
+        background: rgba(245, 166, 35, 0.15);
+        color: var(--amber);
+      }
+      .tag-fragile {
+        background: rgba(255, 107, 107, 0.15);
+        color: var(--accent3);
+      }
+      .method-card h3 {
+        font-size: 1rem;
+        margin-bottom: 6px;
+      }
+      .method-card p {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.6;
+        margin-bottom: 10px;
+      }
+      .pros-cons {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 12px;
+      }
+      .pro {
+        color: var(--green);
+      }
+      .con {
+        color: var(--accent3);
+      }
+
+      /* ── FLOW DIAGRAM ── */
+      .flow {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0;
+        margin: 2rem 0;
+      }
+      .flow-step {
+        flex: 1;
+        min-width: 120px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+        position: relative;
+      }
+      .flow-step .num {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 8px;
+      }
+      .flow-step h4 {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .flow-step p {
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .flow-arrow {
+        color: var(--muted);
+        font-size: 20px;
+        padding: 0 4px;
+        flex-shrink: 0;
+      }
+
+      /* ── PIXEL VISUALISER ── */
+      .pixel-demo {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 2rem 0;
+      }
+      .pixel-demo-header {
+        background: var(--card);
+        border-bottom: 1px solid var(--border);
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .dot-r {
+        background: #ff5f56;
+      }
+      .dot-y {
+        background: #ffbd2e;
+      }
+      .dot-g {
+        background: #27c93f;
+      }
+      .pixel-demo-header span {
+        font-size: 12px;
+        color: var(--muted);
+        margin-left: 6px;
+      }
+      .pixel-demo-body {
+        padding: 20px;
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.8;
+      }
+      .hl-tag {
+        color: #7fb3f5;
+      }
+      .hl-attr {
+        color: #f5c87f;
+      }
+      .hl-val {
+        color: #98d98e;
+      }
+      .hl-url {
+        color: var(--accent2);
+      }
+      .hl-com {
+        color: #555;
+        font-style: italic;
+      }
+
+      /* ── GMAIL vs TITAN comparison ── */
+      .compare-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin: 1.5rem 0;
+      }
+      @media (max-width: 600px) {
+        .compare-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .compare-card {
+        border-radius: 12px;
+        padding: 1.25rem;
+      }
+      .compare-card.bad {
+        background: rgba(255, 107, 107, 0.06);
+        border: 1px solid rgba(255, 107, 107, 0.25);
+      }
+      .compare-card.good {
+        background: rgba(0, 212, 170, 0.06);
+        border: 1px solid rgba(0, 212, 170, 0.25);
+      }
+      .compare-card h3 {
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+      .compare-card .url-pill {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 6px;
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 6px 10px;
+        margin-bottom: 12px;
+        word-break: break-all;
+        color: var(--muted);
+      }
+      .compare-card ul {
+        list-style: none;
+        font-size: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .compare-card ul li::before {
+        margin-right: 6px;
+      }
+      .compare-card.bad ul li::before {
+        content: "✗";
+        color: var(--accent3);
+      }
+      .compare-card.good ul li::before {
+        content: "✓";
+        color: var(--accent2);
+      }
+
+      /* ── LIMITATIONS ── */
+      .limit-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+      }
+      .limit-card {
+        border-radius: 10px;
+        padding: 1.25rem;
+        border: 1px solid var(--border);
+        background: var(--card);
+      }
+      .limit-icon {
+        font-size: 24px;
+        margin-bottom: 8px;
+      }
+      .limit-card h3 {
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+      .limit-card p {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      /* ── AUTH SECTION ── */
+      .auth-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+      }
+      @media (max-width: 640px) {
+        .auth-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .auth-card {
+        border-radius: 10px;
+        padding: 1.25rem;
+        background: var(--card);
+        border: 1px solid var(--border);
+      }
+      .auth-badge {
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--accent);
+        background: rgba(124, 106, 255, 0.12);
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-bottom: 8px;
+      }
+      .auth-card h3 {
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+      .auth-card p {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      /* ── DEMO SECTION ── */
+      #demo {
+        padding-bottom: 2rem;
+      }
+      .demo-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      .demo-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .demo-header h2 {
+        font-size: 1.1rem;
+      }
+      .demo-header p {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+
+      /* send form */
+      .send-row {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .send-row input[type="email"] {
+        flex: 1;
+        min-width: 200px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 9px 14px;
+        color: var(--text);
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .send-row input[type="email"]:focus {
+        border-color: var(--accent);
+      }
+      .sender-select {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 9px 14px;
+        color: var(--text);
+        font-size: 13px;
+        outline: none;
+        cursor: pointer;
+        transition: border-color 0.2s;
+        min-width: 160px;
+      }
+      .sender-select:focus {
+        border-color: var(--accent);
+      }
+
+      .btn {
+        padding: 9px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.15s;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #9380ff;
+      }
+      .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+      .btn-ghost:hover {
+        background: var(--surface);
+        color: var(--text);
+      }
+
+      /* send result */
+      #send-result {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: none;
+        font-size: 13px;
+      }
+      #send-result.visible {
+        display: block;
+      }
+      .result-success {
+        color: var(--green);
+      }
+      .result-error {
+        color: var(--accent3);
+      }
+      .result-row {
+        display: flex;
+        gap: 8px;
+        align-items: baseline;
+        margin-bottom: 4px;
+        flex-wrap: wrap;
+      }
+      .result-label {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        min-width: 70px;
+      }
+      .result-val {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text);
+        word-break: break-all;
+      }
+      .result-val a {
+        color: var(--accent2);
+      }
+
+      /* log terminal */
+      .log-header {
+        padding: 10px 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(0, 0, 0, 0.2);
+      }
+      .log-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        flex: 1;
+      }
+      .live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green);
+        display: inline-block;
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      .live-label {
+        font-size: 11px;
+        color: var(--green);
+        font-weight: 600;
+      }
+
+      #log-terminal {
+        background: #080810;
+        min-height: 260px;
+        max-height: 380px;
+        overflow-y: auto;
+        padding: 14px 1.5rem;
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.8;
+      }
+      .log-line {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+        flex-wrap: wrap;
+        padding: 1px 0;
+      }
+      .log-time {
+        color: #444;
+        min-width: 80px;
+        flex-shrink: 0;
+      }
+      .log-type {
+        min-width: 58px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .log-type.INFO {
+        color: #5b8aff;
+      }
+      .log-type.SENT {
+        color: #c77dff;
+      }
+      .log-type.OPENED {
+        color: #f5a623;
+      }
+      .log-type.ERROR {
+        color: var(--accent3);
+      }
+      .log-msg {
+        color: #a0a0c0;
+        flex: 1;
+      }
+      .log-msg .field {
+        color: #5b8aff;
+      }
+      .log-msg .val {
+        color: var(--accent2);
+      }
+      .log-msg .id-val {
+        color: var(--amber);
+      }
+      .log-empty {
+        color: #333;
+        font-style: italic;
+        padding: 20px 0;
+      }
+
+      /* ── FOOTER ── */
+      footer {
+        text-align: center;
+        padding: 2.5rem;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAV -->
+    <nav>
+      <span class="nav-logo">📧 EmailTracker</span>
+      <ul class="nav-links">
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="#methods">Methods</a></li>
+        <li><a href="#limitations">Limitations</a></li>
+        <li><a href="#auth">Auth</a></li>
+        <li><a href="#setup">Setup</a></li>
+        <li><a href="#demo">Live Demo</a></li>
+        <li><a href="#gmail-vs-titan">Gmail vs Titan</a></li>
+      </ul>
+    </nav>
+
+    <!-- HERO -->
+    <section id="hero" style="max-width: 900px">
+      <h1>How Email Open<br /><span>Tracking Works</span></h1>
+      <p class="hero-sub">
+        A deep dive into the pixel tracking technique used by Titan, Mailchimp,
+        HubSpot, and every major email platform — with a live demo at the end.
+      </p>
+      <a
+        href="#demo"
+        class="btn btn-primary"
+        style="text-decoration: none; display: inline-block"
+        >Jump to Live Demo ↓</a
+      >
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how-it-works" style="max-width: 900px">
+      <div class="section-label">The Core Technique</div>
+      <h2>The Tracking Pixel</h2>
+      <p class="section-sub">
+        A 1×1 transparent image embedded in every email. When the recipient's
+        client fetches it, your server logs the event.
+      </p>
+
+      <div class="flow">
+        <div class="flow-step">
+          <div class="num">1</div>
+          <h4>Email composed</h4>
+          <p>A unique ID is generated. The pixel URL embeds that ID.</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="num">2</div>
+          <h4>Email sent</h4>
+          <p>1×1 GIF is embedded in HTML with the unique tracking URL.</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="num">3</div>
+          <h4>Recipient opens</h4>
+          <p>Their email client fetches all images — including the pixel.</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="num">4</div>
+          <h4>Server logs it</h4>
+          <p>
+            Your server receives the GET request, extracts ID, logs timestamp +
+            IP + user agent.
+          </p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="num">5</div>
+          <h4>You get notified</h4>
+          <p>Push notification, webhook, or live dashboard update fires.</p>
+        </div>
+      </div>
+
+      <div class="pixel-demo">
+        <div class="pixel-demo-header">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <span>email.html — the invisible pixel in your email</span>
+        </div>
+        <div class="pixel-demo-body">
+          <div>
+            <span class="hl-com">&lt;!-- Visible email content --&gt;</span>
+          </div>
+          <div>
+            <span class="hl-tag">&lt;p&gt;</span>Hey, check out our latest
+            update!<span class="hl-tag">&lt;/p&gt;</span>
+          </div>
+          <div>&nbsp;</div>
+          <div>
+            <span class="hl-com"
+              >&lt;!-- Tracking pixel — 1×1 transparent GIF, invisible to reader
+              --&gt;</span
+            >
+          </div>
+          <div>
+            <span class="hl-tag">&lt;img</span>
+            <span class="hl-attr"> src</span>=<span class="hl-val">"</span
+            ><span class="hl-url">https://track.titan.email/pixel/</span
+            ><span style="color: var(--amber)">a8f3k2-x9m1</span
+            ><span class="hl-val">"</span>
+          </div>
+          <div>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <span class="hl-attr">width</span>=<span class="hl-val">"1"</span>
+            <span class="hl-attr"> height</span>=<span class="hl-val">"1"</span>
+            <span class="hl-attr"> alt</span>=<span class="hl-val">""</span>
+            <span class="hl-attr"> style</span>=<span class="hl-val"
+              >"display:block;opacity:0"</span
+            >
+            <span class="hl-tag">/&gt;</span>
+          </div>
+          <div>&nbsp;</div>
+          <div>
+            <span class="hl-com"
+              >&lt;!-- When loaded, server receives: --&gt;</span
+            >
+          </div>
+          <div>
+            <span class="hl-com"
+              >&lt;!-- GET /pixel/a8f3k2-x9m1 from 49.36.xx.xx (India)
+              --&gt;</span
+            >
+          </div>
+          <div>
+            <span class="hl-com"
+              >&lt;!-- User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 17...)
+              --&gt;</span
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- METHODS -->
+    <section id="methods" style="max-width: 900px">
+      <div class="section-label">Approaches</div>
+      <h2>4 Tracking Methods</h2>
+      <p class="section-sub">
+        Industry standard approaches used by email platforms today.
+      </p>
+
+      <div class="card-grid">
+        <div class="card method-card">
+          <span class="tag tag-common">Most common</span>
+          <h3>🖼 Tracking Pixel</h3>
+          <p>
+            1×1 transparent GIF/PNG with a unique URL per email. Server logs
+            every fetch request. Used by Titan, Mailchimp, HubSpot, and
+            virtually every ESP.
+          </p>
+          <div class="pros-cons">
+            <span class="pro">✓ Silent, no user action needed</span>
+            <span class="pro">✓ Works in HTML emails</span>
+            <span class="con">✗ Blocked by Apple Mail Privacy</span>
+            <span class="con">✗ Image blocking defeats it</span>
+          </div>
+        </div>
+        <div class="card method-card">
+          <span class="tag tag-solid">Most reliable</span>
+          <h3>🔗 Link Tracking</h3>
+          <p>
+            Every link is redirected through a tracking URL. A click
+            definitively confirms the email was read. Used alongside pixel
+            tracking.
+          </p>
+          <div class="pros-cons">
+            <span class="pro">✓ Confirms real engagement</span>
+            <span class="pro">✓ Not blocked by privacy tools</span>
+            <span class="con">✗ Only fires on actual clicks</span>
+            <span class="con">✗ URL rewriting looks suspicious</span>
+          </div>
+        </div>
+        <div class="card method-card">
+          <span class="tag tag-manual">Opt-in only</span>
+          <h3>📨 Read Receipts (MDN)</h3>
+          <p>
+            Standard email protocol (Message Disposition Notification). Asks the
+            client to send a read confirmation. Requires recipient approval.
+          </p>
+          <div class="pros-cons">
+            <span class="pro">✓ Explicit consent built in</span>
+            <span class="pro">✓ Protocol-standard</span>
+            <span class="con">✗ Disabled by default in most clients</span>
+            <span class="con">✗ Recipient sees the request</span>
+          </div>
+        </div>
+        <div class="card method-card">
+          <span class="tag tag-fragile">Advanced / fragile</span>
+          <h3>🎨 CSS / Font Requests</h3>
+          <p>
+            Loading external CSS files or web fonts triggers HTTP requests. Less
+            reliable — most clients strip external CSS or cache aggressively.
+          </p>
+          <div class="pros-cons">
+            <span class="pro">✓ Harder to block than pixels</span>
+            <span class="con">✗ Stripped by Gmail, Outlook</span>
+            <span class="con">✗ Inconsistent across clients</span>
+            <span class="con">✗ Not worth the complexity</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIMITATIONS -->
+    <section id="limitations" style="max-width: 900px">
+      <div class="section-label">Gotchas</div>
+      <h2>Known Limitations</h2>
+      <p class="section-sub">
+        Every major email platform deals with these.
+      </p>
+
+      <div class="limit-grid">
+        <div class="limit-card">
+          <div class="limit-icon">🍎</div>
+          <h3>Apple Mail Privacy (iOS 15+)</h3>
+          <p>
+            Apple pre-fetches <em>all</em> email images in the background. Every
+            email to an Apple Mail user shows as "opened" — even unread ones.
+            Affects ~50% of mobile email.
+          </p>
+        </div>
+        <div class="limit-card">
+          <div class="limit-icon">🏢</div>
+          <h3>Corporate image blocking</h3>
+          <p>
+            Outlook and many enterprise clients block images by default. Real
+            opens are missed unless the user clicks "show images". Common in B2B
+            email.
+          </p>
+        </div>
+        <div class="limit-card">
+          <div class="limit-icon">🔁</div>
+          <h3>Google pre-fetching</h3>
+          <p>
+            Gmail's proxy sometimes fetches images for spam scanning before the
+            user opens. Can show false opens with a Google IP rather than the
+            real recipient's location.
+          </p>
+        </div>
+        <div class="limit-card">
+          <div class="limit-icon">📦</div>
+          <h3>Email caching</h3>
+          <p>
+            Some clients cache images after first load. Re-opens won't fire a
+            second pixel request. Open count may be understated for repeated
+            reads.
+          </p>
+        </div>
+        <div class="limit-card">
+          <div class="limit-icon">🌐</div>
+          <h3>VPN / proxy</h3>
+          <p>
+            The IP you log belongs to the proxy or VPN the recipient uses — not
+            their real location. Geolocation from open events is unreliable.
+          </p>
+        </div>
+        <div class="limit-card">
+          <div class="limit-icon">⚖️</div>
+          <h3>GDPR / Privacy law</h3>
+          <p>
+            EU (GDPR), Canada (CASL) require disclosing tracking in your privacy
+            policy. Always honor unsubscribes. Tracking without disclosure can
+            be a violation.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUTH RECORDS -->
+    <section id="auth" style="max-width: 900px">
+      <div class="section-label">Deliverability</div>
+      <h2>3 DNS Records Every Sender Needs</h2>
+      <p class="section-sub">
+        Without these, Gmail and Yahoo will reject or spam-folder your email —
+        tracked or not.
+      </p>
+
+      <div class="auth-grid">
+        <div class="auth-card">
+          <div class="auth-badge">SPF</div>
+          <h3>Sender Policy Framework</h3>
+          <p>
+            A DNS TXT record that lists which servers are authorized to send
+            email for your domain. Prevents spoofing.
+            <em>Without it: Gmail may reject your mail outright.</em>
+          </p>
+          <div
+            style="
+              background: rgba(0, 0, 0, 0.3);
+              border-radius: 6px;
+              padding: 8px;
+              font-family: var(--mono);
+              font-size: 10px;
+              margin-top: 10px;
+              color: var(--muted);
+            "
+          >
+            v=spf1 include:_spf.yourdomain.com ~all
+          </div>
+        </div>
+        <div class="auth-card">
+          <div class="auth-badge">DKIM</div>
+          <h3>DomainKeys Identified Mail</h3>
+          <p>
+            Adds a cryptographic signature to outgoing emails. Proves the email
+            wasn't altered in transit.
+            <em>Without it: marked as suspicious by most clients.</em>
+          </p>
+          <div
+            style="
+              background: rgba(0, 0, 0, 0.3);
+              border-radius: 6px;
+              padding: 8px;
+              font-family: var(--mono);
+              font-size: 10px;
+              margin-top: 10px;
+              color: var(--muted);
+            "
+          >
+            yourdomain._domainkey → TXT → p=MIGfMA0...
+          </div>
+        </div>
+        <div class="auth-card">
+          <div class="auth-badge">DMARC</div>
+          <h3>Domain-based Message Auth</h3>
+          <p>
+            Policy that tells receiving servers what to do when SPF/DKIM fail:
+            quarantine or reject. Greatly improves deliverability scores.
+            <em>Required by Gmail for bulk senders since 2024.</em>
+          </p>
+          <div
+            style="
+              background: rgba(0, 0, 0, 0.3);
+              border-radius: 6px;
+              padding: 8px;
+              font-family: var(--mono);
+              font-size: 10px;
+              margin-top: 10px;
+              color: var(--muted);
+            "
+          >
+            v=DMARC1; p=quarantine; rua=mailto:...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CURRENT SETUP -->
+    <section id="setup" style="max-width: 900px">
+      <div class="section-label">Configuration</div>
+      <h2>Current Demo Setup</h2>
+      <p class="section-sub">
+        This server's current configuration. All tracking events are written to
+        <code style="background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; font-size: 12px;">tracker.log</code>
+        and streamed live below.
+      </p>
+
+      <div class="card" style="margin-bottom: 1rem">
+        <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; font-size: 13px; font-family: var(--mono)">
+          <span style="color: var(--muted)">Server</span>
+          <span>Express · Node.js <span id="setup-node">—</span></span>
+          <span style="color: var(--muted)">Port</span>
+          <span id="setup-port">—</span>
+          <span style="color: var(--muted)">Base URL</span>
+          <span id="setup-baseurl">—</span>
+          <span style="color: var(--muted)">Log file</span>
+          <span><code>tracker.log</code> (appends on every event)</span>
+          <span style="color: var(--muted)">SMTP</span>
+          <span id="setup-smtp">—</span>
+        </div>
+      </div>
+
+      <div class="card" style="font-size: 13px; color: var(--muted); line-height: 1.8">
+        <strong style="color: var(--text)">How to test this demo:</strong><br>
+        1. Enter an email address below and click <strong style="color: var(--text)">"Send tracked email"</strong><br>
+        2. If using Ethereal, click the preview URL to view the email in a browser<br>
+        3. Opening the email triggers the tracking pixel → the server logs it<br>
+        4. Or click <strong style="color: var(--text)">"Simulate open"</strong> to trigger a fake open event instantly<br>
+        5. Watch the live log terminal below — every event is also written to <code>tracker.log</code>
+      </div>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <section id="demo" style="max-width: 900px; padding-bottom: 4rem">
+      <div class="section-label">Live Demo</div>
+      <h2>Try It Right Now</h2>
+      <p class="section-sub">
+        Send a tracked email and watch the open event fire in real time below.
+      </p>
+
+      <div class="demo-card">
+        <div class="demo-header">
+          <h2>Send a tracked email</h2>
+          <p>
+            Enter any email address. When the email is opened, the live log will
+            fire.
+          </p>
+        </div>
+
+        <div class="send-row">
+          <input
+            type="email"
+            id="email-input"
+            placeholder="recipient@gmail.com"
+          />
+          <select id="sender-select" class="sender-select">
+            <option value="ethereal">Ethereal (Test)</option>
+            <option value="gmail">Gmail (Real SMTP)</option>
+          </select>
+          <button class="btn btn-primary" id="send-btn" onclick="sendEmail()">
+            Send tracked email
+          </button>
+          <button class="btn btn-ghost" onclick="simulateOpen()">
+            Simulate open
+          </button>
+        </div>
+
+        <div id="send-result">
+          <div id="send-result-inner"></div>
+        </div>
+
+        <div class="log-header">
+          <span class="log-title">Live server log</span>
+          <span class="live-dot"></span>
+          <span class="live-label">LIVE</span>
+          <button
+            class="btn btn-ghost"
+            style="font-size: 11px; padding: 4px 10px; margin-left: 8px"
+            onclick="clearLogs()"
+          >
+            Clear
+          </button>
+        </div>
+        <div id="log-terminal">
+          <div class="log-empty">
+            Waiting for events… send an email or click "Simulate open"
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GMAIL VS TITAN / LOCALHOST -->
+    <section id="gmail-vs-titan" style="max-width: 900px">
+      <div class="section-label">Why Localhost Fails</div>
+      <h2>Gmail vs Titan: The Key Difference</h2>
+      <p class="section-sub">
+        This is exactly why your localhost pixel returned 404 — and how Titan
+        avoids it.
+      </p>
+
+      <div class="compare-grid">
+        <div class="compare-card bad">
+          <h3>❌ Your localhost setup</h3>
+          <div class="url-pill">http://localhost:3000/pixel/abc123</div>
+          <ul>
+            <li>Only reachable on your machine</li>
+            <li>Gmail proxy can't reach it</li>
+            <li>ngrok free tier gets throttled</li>
+            <li>URL resets on every restart</li>
+            <li>Google rejects non-standard domains</li>
+          </ul>
+        </div>
+        <div class="compare-card good">
+          <h3>✅ Titan's production setup</h3>
+          <div class="url-pill">https://track.titan.email/pixel/abc123</div>
+          <ul>
+            <li>Permanent, public HTTPS domain</li>
+            <li>Gmail proxy can reach it 24/7</li>
+            <li>Trusted domain, no blocks</li>
+            <li>Always-on infrastructure</li>
+            <li>Valid TLS certificate</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1rem">
+        <h3 style="margin-bottom: 10px">🔍 How Gmail's Image Proxy works</h3>
+        <p style="font-size: 13px; color: var(--muted); line-height: 1.8">
+          Since 2013, Gmail routes
+          <strong style="color: var(--text)">all images</strong> through
+          Google's own proxy servers (<code
+            style="
+              background: rgba(255, 255, 255, 0.06);
+              padding: 1px 6px;
+              border-radius: 4px;
+              font-size: 11px;
+            "
+            >ci3.googleusercontent.com</code
+          >). When a recipient opens your email,
+          <strong style="color: var(--text)">Google's servers</strong> fetch the
+          pixel — not the recipient's device. This means your pixel server must
+          be publicly reachable from the internet with a valid HTTPS URL. This
+          is also why Gmail sometimes shows "opened" before the recipient even
+          looks — Google pre-fetches images for spam scanning.
+        </p>
+      </div>
+    </section>
+
+    <footer>
+      Built with Node.js · Express · Nodemailer &nbsp;|&nbsp; email pixel tracking demo
+    </footer>
+
+    <script>
+      let logLines = [];
+      let hasEvents = false;
+      let lastSimId = null;
+
+      // ── Fetch config and populate setup section ─────────────────────────────────
+      fetch("/config")
+        .then((r) => r.json())
+        .then((cfg) => {
+          document.getElementById("setup-node").textContent = cfg.nodeVersion;
+          document.getElementById("setup-port").textContent = cfg.port;
+          document.getElementById("setup-baseurl").textContent = cfg.baseUrl;
+          const available = Object.values(cfg.senders || {})
+            .filter((s) => s.available)
+            .map((s) => s.label)
+            .join(", ");
+          document.getElementById("setup-smtp").textContent =
+            available || "None configured";
+
+          // Disable Gmail option in dropdown if not configured
+          if (!cfg.senders?.gmail?.available) {
+            const opt = document.querySelector("#sender-select option[value='gmail']");
+            if (opt) {
+              opt.disabled = true;
+              opt.textContent = "Gmail (Real SMTP) — not configured";
+            }
+          }
+        })
+        .catch(() => {});
+
+      // ── SSE connection ──────────────────────────────────────────────────────────
+      const evtSource = new EventSource("/logs/stream");
+      evtSource.onmessage = (e) => {
+        try {
+          const entry = JSON.parse(e.data);
+          addLogLine(entry);
+        } catch (_) {}
+      };
+
+      // ── Render a log entry ──────────────────────────────────────────────────────
+      function addLogLine(entry) {
+        if (!hasEvents) {
+          document.getElementById("log-terminal").innerHTML = "";
+          hasEvents = true;
+        }
+
+        const time = new Date(entry.ts).toLocaleTimeString();
+        const type = entry.type || "INFO";
+
+        let msg = "";
+        if (type === "INFO") {
+          msg = `<span class="log-msg">${escHtml(entry.message || "")}</span>`;
+        } else if (type === "SENT") {
+          msg = `<span class="log-msg">
+        <span class="field">to:</span> <span class="val">${escHtml(entry.to)}</span> &nbsp;
+        <span class="field">id:</span> <span class="id-val">${escHtml(entry.emailId)}</span> &nbsp;
+        <span class="field">via:</span> <span class="val">${escHtml(entry.sender || "—")}</span>
+      </span>`;
+        } else if (type === "OPENED") {
+          msg = `<span class="log-msg">
+        <span class="field">id:</span> <span class="id-val">${escHtml(entry.emailId)}</span> &nbsp;
+        <span class="field">opens:</span> <span class="val">${entry.count}</span> &nbsp;
+        <span class="field">ip:</span> <span class="val">${escHtml(entry.ip || "—")}</span>
+      </span>`;
+        } else if (type === "ERROR") {
+          msg = `<span class="log-msg" style="color:var(--accent3)">${escHtml(entry.message || "")}</span>`;
+        }
+
+        const line = document.createElement("div");
+        line.className = "log-line";
+        line.innerHTML = `
+      <span class="log-time">${time}</span>
+      <span class="log-type ${type}">${type}</span>
+      ${msg}
+    `;
+        const terminal = document.getElementById("log-terminal");
+        terminal.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+        logLines.push(line);
+        if (logLines.length > 60) {
+          logLines.shift().remove();
+        }
+      }
+
+      // ── Send email ──────────────────────────────────────────────────────────────
+      async function sendEmail() {
+        const email = document.getElementById("email-input").value.trim();
+        if (!email) {
+          alert("Enter an email address");
+          return;
+        }
+
+        const btn = document.getElementById("send-btn");
+        btn.disabled = true;
+        btn.textContent = "Sending…";
+
+        const result = document.getElementById("send-result");
+        const inner = document.getElementById("send-result-inner");
+        result.className = "visible";
+        inner.innerHTML = `<span style="color:var(--muted)">Sending…</span>`;
+
+        try {
+          const sender = document.getElementById("sender-select").value;
+          const res = await fetch(`/send?to=${encodeURIComponent(email)}&sender=${sender}`);
+          const data = await res.json();
+
+          if (data.success) {
+            inner.innerHTML = `
+          <div class="result-success" style="margin-bottom:8px">✔ Email sent successfully!</div>
+          <div class="result-row"><span class="result-label">Email ID</span><span class="result-val">${escHtml(data.emailId)}</span></div>
+          <div class="result-row"><span class="result-label">Pixel URL</span><span class="result-val"><a href="${escHtml(data.pixelUrl)}" target="_blank">${escHtml(data.pixelUrl)}</a></span></div>
+          ${data.previewUrl ? `<div class="result-row"><span class="result-label">Preview URL</span><span class="result-val"><a href="${escHtml(data.previewUrl)}" target="_blank">${escHtml(data.previewUrl)}</a></span></div>` : ""}
+          <div class="result-row"><span class="result-label">Sender</span><span class="result-val">${escHtml(data.sender)}</span></div>
+          <div style="margin-top:8px;font-size:12px;color:var(--muted)">${data.previewUrl ? "Open the preview URL → watch the OPENED event appear in the log below ↓" : "Open the email in your inbox → watch the OPENED event appear in the log below ↓"}</div>
+        `;
+          } else {
+            inner.innerHTML = `<div class="result-error">⚠ ${escHtml(data.error)}</div>`;
+          }
+        } catch (err) {
+          inner.innerHTML = `<div class="result-error">⚠ ${err.message}</div>`;
+        }
+
+        btn.disabled = false;
+        btn.textContent = "Send tracked email";
+      }
+
+      // ── Simulate open ───────────────────────────────────────────────────────────
+      async function simulateOpen() {
+        const id = lastSimId || `sim-${Date.now()}`;
+        lastSimId = null;
+        try {
+          await fetch(`/pixel/${id}`);
+        } catch (_) {}
+      }
+
+      // ── Clear logs ──────────────────────────────────────────────────────────────
+      function clearLogs() {
+        document.getElementById("log-terminal").innerHTML =
+          `<div class="log-empty">Log cleared. Waiting for events…</div>`;
+        logLines = [];
+        hasEvents = false;
+      }
+
+      // ── Enter key on input ──────────────────────────────────────────────────────
+      document
+        .getElementById("email-input")
+        .addEventListener("keydown", (e) => {
+          if (e.key === "Enter") sendEmail();
+        });
+
+      function escHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+    </script>
+  </body>
+</html>

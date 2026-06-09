@@ -32,23 +32,47 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 const chalk = require("chalk");
 
+// ── FILE LOGGING & SSE ─────────────────────────────────────────────────────
+const fs = require("fs");
+const path = require("path");
+const { EventEmitter } = require("events");
+
+const LOG_FILE = path.join(__dirname, "tracker.log");
+const logStream = fs.createWriteStream(LOG_FILE, { flags: "a" });
+const logEmitter = new EventEmitter();
+logEmitter.setMaxListeners(100);
+
+function emitLog(type, data) {
+  const entry = { ts: Date.now(), type, ...data };
+  logStream.write(JSON.stringify(entry) + "\n");
+  logEmitter.emit("log", entry);
+}
+// ───────────────────────────────────────────────────────────────────────────
+
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const CONFIG = {
   PORT: process.env.PORT || 3000,
-
-  // Your public base URL — replace with ngrok URL when testing with real email
-  // e.g. "https://abc123.ngrok-free.app"
   BASE_URL: process.env.BASE_URL || `http://localhost:3000`,
 
-  // Nodemailer SMTP config
-  // For quick testing: use Gmail App Password or Ethereal (https://ethereal.email)
-  SMTP: {
-    host: process.env.SMTP_HOST || "smtp.ethereal.email",
-    port: Number(process.env.SMTP_PORT) || 587,
+  // Gmail SMTP (real sending)
+  GMAIL: {
+    host: process.env.GMAIL_HOST || process.env.SMTP_HOST || "",
+    port: Number(process.env.GMAIL_PORT || process.env.SMTP_PORT) || 587,
     secure: false,
     auth: {
-      user: process.env.SMTP_USER || "", // fill in or use .env
-      pass: process.env.SMTP_PASS || "",
+      user: process.env.GMAIL_USER || process.env.SMTP_USER || "",
+      pass: process.env.GMAIL_PASS || process.env.SMTP_PASS || "",
+    },
+  },
+
+  // Ethereal SMTP (test / preview)
+  ETHEREAL: {
+    host: process.env.ETHEREAL_HOST || "smtp.ethereal.email",
+    port: Number(process.env.ETHEREAL_PORT) || 587,
+    secure: false,
+    auth: {
+      user: process.env.ETHEREAL_USER || "",
+      pass: process.env.ETHEREAL_PASS || "",
     },
   },
 };
@@ -110,6 +134,13 @@ app.get("/pixel/:emailId", (req, res) => {
   });
   log.divider();
 
+  emitLog("OPENED", {
+    emailId,
+    ip,
+    userAgent: ua.substring(0, 80),
+    count: emailLog[emailId].count,
+  });
+
   // Serve the 1×1 transparent GIF
   res.set({
     "Content-Type":  "image/gif",
@@ -125,79 +156,92 @@ app.get("/pixel/:emailId", (req, res) => {
 app.get("/send", async (req, res) => {
   const to      = req.query.to;
   const subject = req.query.subject || "Hello from Email Tracker";
-  console.log("Send request received:", { to, subject });
+  const sender  = req.query.sender || "ethereal";
+
   if (!to) {
     return res.status(400).json({ error: "Pass ?to=email@example.com" });
   }
 
-  // Generate a unique ID for this email
   const emailId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const pixelUrl = `${CONFIG.BASE_URL}/pixel/${emailId}`;
-  console.log("Generated email ID and pixel URL:", { emailId, pixelUrl });
+
   const html = `
     <div style="font-family: sans-serif; max-width: 560px; margin: auto; color: #333;">
       <h2 style="color: #333;">Hey there 👋</h2>
       <p>This is a <strong>tracked email</strong> demo. When you open this email
          (and your client loads images), the server will log the open event in real time.</p>
-
       <p style="background: #f4f4f4; padding: 12px; border-radius: 6px; font-size: 13px;">
         📌 Email ID: <code>${emailId}</code>
       </p>
-
       <p>Check the terminal — it'll show exactly when you opened this.</p>
       <p style="color: #888; font-size: 12px;">Sent via Email Tracker demo · Node.js + Express</p>
-
-      <!-- Tracking pixel — 1x1 transparent image -->
       <img src="${pixelUrl}" width="1" height="1" alt="" style="display:block" />
     </div>
   `;
 
   try {
-    // Auto-create Ethereal test account if no SMTP creds provided
     let transporter;
-    if (!CONFIG.SMTP.auth.user) {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host:   "smtp.ethereal.email",
-        port:   587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-      log.warn("No SMTP config found — using Ethereal test account.");
-      log.info(`Ethereal user: ${testAccount.user}`);
+    let senderLabel;
+
+    if (sender === "gmail") {
+      if (!CONFIG.GMAIL.auth.user) {
+        return res.status(400).json({
+          error: "Gmail SMTP not configured. Set GMAIL_USER and GMAIL_PASS in .env",
+        });
+      }
+      transporter = nodemailer.createTransport(CONFIG.GMAIL);
+      senderLabel = "Gmail";
+      log.info(`Using Gmail SMTP: ${CONFIG.GMAIL.auth.user}`);
     } else {
-      console.log("Using provided SMTP configuration:", CONFIG.SMTP);
-      transporter = nodemailer.createTransport(CONFIG.SMTP);
+      if (CONFIG.ETHEREAL.auth.user) {
+        transporter = nodemailer.createTransport(CONFIG.ETHEREAL);
+        senderLabel = "Ethereal";
+      } else {
+        const testAccount = await nodemailer.createTestAccount();
+        transporter = nodemailer.createTransport({
+          host: "smtp.ethereal.email",
+          port: 587,
+          secure: false,
+          auth: { user: testAccount.user, pass: testAccount.pass },
+        });
+        senderLabel = "Ethereal (auto)";
+        log.info(`Ethereal auto-created account: ${testAccount.user}`);
+      }
     }
+
     const info = await transporter.sendMail({
-      from:    '"Email Tracker Demo" <tracker@demo.com>',
+      from:    `"Email Tracker Demo" <${sender === "gmail" ? CONFIG.GMAIL.auth.user : "tracker@demo.com"}>`,
       to,
       subject,
       html,
       text: `Tracked email. ID: ${emailId}. Pixel URL: ${pixelUrl}`,
     });
 
-    const previewUrl = nodemailer.getTestMessageUrl(info);
+    let previewUrl = null;
+    if (sender !== "gmail") {
+      previewUrl = nodemailer.getTestMessageUrl(info);
+    }
 
-    log.send(`Email sent to ${chalk.bold(to)}`);
+    log.send(`Email sent via ${senderLabel} to ${chalk.bold(to)}`);
     log.info(`Email ID : ${emailId}`);
     log.info(`Pixel URL: ${pixelUrl}`);
     if (previewUrl) {
       log.info(`Preview  : ${chalk.underline(previewUrl)}`);
     }
 
+    emitLog("SENT", { to, emailId, sender: senderLabel, previewUrl });
+
     res.json({
       success:    true,
       emailId,
       pixelUrl,
-      previewUrl: previewUrl || null,
-      message:    `Email sent! Check console for open events.`,
+      previewUrl,
+      sender: senderLabel,
+      message:   `Email sent via ${senderLabel}!`,
     });
   } catch (err) {
     log.warn(`Send failed: ${err.message}`);
+    emitLog("ERROR", { message: err.message });
     res.status(500).json({ error: err.message });
   }
 });
@@ -211,30 +255,49 @@ app.get("/stats", (req, res) => {
   });
 });
 
-// ── Home — shows usage ────────────────────────────────────────────────────────
+// ── Serve index.html ──────────────────────────────────────────────────────────
 app.get("/", (req, res) => {
-  res.send(`
-    <html><head><title>Email Tracker</title>
-    <style>body{font-family:monospace;max-width:640px;margin:40px auto;background:#0d0d0d;color:#0f0;padding:20px}
-    code{background:#1a1a1a;padding:2px 8px;border-radius:4px}a{color:#0ff}</style></head>
-    <body>
-    <h2>📧 Email Tracker — Running</h2>
-    <p><b>Base URL:</b> <code>${CONFIG.BASE_URL}</code></p>
-    <hr>
-    <h3>Endpoints</h3>
-    <p><b>Send a tracked email:</b><br>
-    <a href="/send?to=test@example.com">/send?to=your@email.com&subject=Hello</a></p>
-    <p><b>Manual pixel (simulate open):</b><br>
-    <a href="/pixel/test-001">/pixel/test-001</a></p>
-    <p><b>View all open stats:</b><br>
-    <a href="/stats">/stats</a></p>
-    <hr>
-    <h3>ngrok setup</h3>
-    <pre>npx ngrok http ${CONFIG.PORT}
-# Copy the https URL, then:
-BASE_URL=https://xyz.ngrok-free.app node server.js</pre>
-    </body></html>
-  `);
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// ── SSE log stream ────────────────────────────────────────────────────────────
+app.get("/logs/stream", (req, res) => {
+  res.set({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+  });
+  res.flushHeaders();
+
+  res.write(`data: ${JSON.stringify({ ts: Date.now(), type: "INFO", message: "Connected to log stream" })}\n\n`);
+
+  const handler = (entry) => {
+    res.write(`data: ${JSON.stringify(entry)}\n\n`);
+  };
+  logEmitter.on("log", handler);
+  req.on("close", () => logEmitter.off("log", handler));
+});
+
+// ── Expose non-sensitive config for the frontend ──────────────────────────────
+app.get("/config", (req, res) => {
+  res.json({
+    port: CONFIG.PORT,
+    baseUrl: CONFIG.BASE_URL,
+    logFile: "tracker.log",
+    senders: {
+      ethereal: {
+        available: true,
+        label: "Ethereal (Test)",
+        configured: !!CONFIG.ETHEREAL.auth.user,
+      },
+      gmail: {
+        available: !!CONFIG.GMAIL.auth.user,
+        label: "Gmail (Real SMTP)",
+        configured: !!CONFIG.GMAIL.auth.user,
+      },
+    },
+    nodeVersion: process.version,
+  });
 });
 
 // ── Start server ──────────────────────────────────────────────────────────────

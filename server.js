@@ -125,7 +125,7 @@ app.get("/pixel/:emailId", (req, res) => {
 app.get("/send", async (req, res) => {
   const to      = req.query.to;
   const subject = req.query.subject || "Hello from Email Tracker";
-
+  console.log("Send request received:", { to, subject });
   if (!to) {
     return res.status(400).json({ error: "Pass ?to=email@example.com" });
   }
@@ -133,7 +133,7 @@ app.get("/send", async (req, res) => {
   // Generate a unique ID for this email
   const emailId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const pixelUrl = `${CONFIG.BASE_URL}/pixel/${emailId}`;
-
+  console.log("Generated email ID and pixel URL:", { emailId, pixelUrl });
   const html = `
     <div style="font-family: sans-serif; max-width: 560px; margin: auto; color: #333;">
       <h2 style="color: #333;">Hey there 👋</h2>
@@ -169,9 +169,9 @@ app.get("/send", async (req, res) => {
       log.warn("No SMTP config found — using Ethereal test account.");
       log.info(`Ethereal user: ${testAccount.user}`);
     } else {
+      console.log("Using provided SMTP configuration:", CONFIG.SMTP);
       transporter = nodemailer.createTransport(CONFIG.SMTP);
     }
-
     const info = await transporter.sendMail({
       from:    '"Email Tracker Demo" <tracker@demo.com>',
       to,

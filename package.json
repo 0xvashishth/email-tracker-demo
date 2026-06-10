@@ -2,9 +2,9 @@
   "name": "email-tracker",
   "version": "1.0.0",
   "description": "Email open tracker with pixel tracking",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon index.js"
   },
   "engines": {
     "node": ">=18.0.0"

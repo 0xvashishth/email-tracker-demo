@@ -54,7 +54,7 @@ Open the email → check Render logs → you'll see the open event fire. 🎉
 cp .env.example .env
 # Fill in your values in .env
 npm install
-node server.js
+node index.js
 ```
 
 ---

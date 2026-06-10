@@ -38,11 +38,10 @@ const path = require("path");
 const { EventEmitter } = require("events");
 
 const LOG_FILE = path.join(__dirname, "tracker.log");
-let logStream;
-try {
+let logStream = { write: () => {} };
+if (!process.env.VERCEL) {
   logStream = fs.createWriteStream(LOG_FILE, { flags: "a" });
-} catch (_) {
-  logStream = { write: () => {} };
+  logStream.on("error", () => {});
 }
 const logEmitter = new EventEmitter();
 logEmitter.setMaxListeners(100);

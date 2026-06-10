@@ -116,11 +116,14 @@ app.get("/pixel/:emailId", (req, res) => {
   const ip  = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   const ua  = req.headers["user-agent"] || "unknown";
 
+  const allHeaders = { ...req.headers };
+
   const record = {
     emailId,
     openedAt: now.toISOString(),
     ip,
     userAgent: ua,
+    headers: allHeaders,
     count: 1,
   };
 
@@ -139,14 +142,18 @@ app.get("/pixel/:emailId", (req, res) => {
     "Opened at":  now.toLocaleString(),
     "Open count": emailLog[emailId].count,
     "IP address": ip,
-    "User agent": ua.substring(0, 80),
+    "User agent": ua.substring(0, 120),
+    "Headers":    JSON.stringify(allHeaders).substring(0, 300),
   });
+  log.info(chalk.cyan("Full headers:"));
+  console.log(allHeaders);
   log.divider();
 
   emitLog("OPENED", {
     emailId,
     ip,
-    userAgent: ua.substring(0, 80),
+    userAgent: ua.substring(0, 120),
+    headers: allHeaders,
     count: emailLog[emailId].count,
   });
 

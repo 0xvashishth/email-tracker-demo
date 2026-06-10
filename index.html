@@ -1263,10 +1263,12 @@
         <span class="field">via:</span> <span class="val">${escHtml(entry.sender || "—")}</span>
       </span>`;
         } else if (type === "OPENED") {
+          const headerCount = entry.headers ? Object.keys(entry.headers).length : 0;
           msg = `<span class="log-msg">
         <span class="field">id:</span> <span class="id-val">${escHtml(entry.emailId)}</span> &nbsp;
         <span class="field">opens:</span> <span class="val">${entry.count}</span> &nbsp;
-        <span class="field">ip:</span> <span class="val">${escHtml(entry.ip || "—")}</span>
+        <span class="field">ip:</span> <span class="val">${escHtml(entry.ip || "—")}</span> &nbsp;
+        <span class="field">headers:</span> <span class="val">${headerCount}</span>
       </span>`;
         } else if (type === "ERROR") {
           msg = `<span class="log-msg" style="color:var(--accent3)">${escHtml(entry.message || "")}</span>`;

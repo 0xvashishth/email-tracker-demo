@@ -38,13 +38,23 @@ const path = require("path");
 const { EventEmitter } = require("events");
 
 const LOG_FILE = path.join(__dirname, "tracker.log");
-const logStream = fs.createWriteStream(LOG_FILE, { flags: "a" });
+let logStream;
+try {
+  logStream = fs.createWriteStream(LOG_FILE, { flags: "a" });
+} catch (_) {
+  logStream = { write: () => {} };
+}
 const logEmitter = new EventEmitter();
 logEmitter.setMaxListeners(100);
+
+const recentEvents = [];
+const MAX_EVENTS = 50;
 
 function emitLog(type, data) {
   const entry = { ts: Date.now(), type, ...data };
   logStream.write(JSON.stringify(entry) + "\n");
+  recentEvents.push(entry);
+  if (recentEvents.length > MAX_EVENTS) recentEvents.shift();
   logEmitter.emit("log", entry);
 }
 // ───────────────────────────────────────────────────────────────────────────
@@ -71,8 +81,8 @@ const CONFIG = {
     port: Number(process.env.ETHEREAL_PORT) || 587,
     secure: false,
     auth: {
-      user: process.env.ETHEREAL_USER || "",
-      pass: process.env.ETHEREAL_PASS || "",
+      user: process.env.ETHEREAL_USER || "cedrick.hilll24@ethereal.email",
+      pass: process.env.ETHEREAL_PASS || "3kaGsteuU6EEp21wCG",
     },
   },
 };
@@ -210,7 +220,7 @@ app.get("/send", async (req, res) => {
     }
 
     const info = await transporter.sendMail({
-      from:    `"Email Tracker Demo" <${sender === "gmail" ? CONFIG.GMAIL.auth.user : "tracker@demo.com"}>`,
+      from:    `"Email Tracker Demo" <${sender === "gmail" ? CONFIG.GMAIL.auth.user : CONFIG.ETHEREAL.auth.user}>`,
       to,
       subject,
       html,
@@ -252,6 +262,7 @@ app.get("/stats", (req, res) => {
   res.json({
     totalTracked: total,
     emails: emailLog,
+    recentEvents,
   });
 });
 
@@ -262,6 +273,9 @@ app.get("/", (req, res) => {
 
 // ── SSE log stream ────────────────────────────────────────────────────────────
 app.get("/logs/stream", (req, res) => {
+  if (process.env.VERCEL) {
+    return res.status(501).json({ error: "SSE not available in serverless environment" });
+  }
   res.set({
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
@@ -300,21 +314,26 @@ app.get("/config", (req, res) => {
   });
 });
 
-// ── Start server ──────────────────────────────────────────────────────────────
-app.listen(CONFIG.PORT, () => {
-  log.divider();
-  log.success(`Email Tracker server running`);
-  log.info(`Local  : http://localhost:${CONFIG.PORT}`);
-  log.info(`Base URL set to: ${CONFIG.BASE_URL}`);
-  log.divider();
-  log.info("To expose publicly via ngrok:");
-  log.info(chalk.bold(`  npx ngrok http ${CONFIG.PORT}`));
-  log.info("Then restart with:");
-  log.info(chalk.bold(`  BASE_URL=https://your-ngrok-url.app node server.js`));
-  log.divider();
-  log.info("To send a test email, open:");
-  log.info(chalk.bold(`  http://localhost:${CONFIG.PORT}/send?to=you@example.com`));
-  log.info("To simulate an open:");
-  log.info(chalk.bold(`  http://localhost:${CONFIG.PORT}/pixel/test-001`));
-  log.divider();
-});
+// ── Export app for serverless (Vercel) ────────────────────────────────────────
+module.exports = app;
+
+// ── Start server (local only) ─────────────────────────────────────────────────
+if (require.main === module) {
+  app.listen(CONFIG.PORT, () => {
+    log.divider();
+    log.success(`Email Tracker server running`);
+    log.info(`Local  : http://localhost:${CONFIG.PORT}`);
+    log.info(`Base URL set to: ${CONFIG.BASE_URL}`);
+    log.divider();
+    log.info("To expose publicly via ngrok:");
+    log.info(chalk.bold(`  npx ngrok http ${CONFIG.PORT}`));
+    log.info("Then restart with:");
+    log.info(chalk.bold(`  BASE_URL=https://your-ngrok-url.app node server.js`));
+    log.divider();
+    log.info("To send a test email, open:");
+    log.info(chalk.bold(`  http://localhost:${CONFIG.PORT}/send?to=you@example.com`));
+    log.info("To simulate an open:");
+    log.info(chalk.bold(`  http://localhost:${CONFIG.PORT}/pixel/test-001`));
+    log.divider();
+  });
+}

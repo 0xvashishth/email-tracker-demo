@@ -674,13 +674,13 @@
     <nav>
       <span class="nav-logo">📧 EmailTracker</span>
       <ul class="nav-links">
-        <li><a href="#how-it-works">How it works</a></li>
         <li><a href="#methods">Methods</a></li>
-        <li><a href="#limitations">Limitations</a></li>
-        <li><a href="#auth">Auth</a></li>
+        <li><a href="#how-it-works">How it works</a></li>
         <li><a href="#setup">Setup</a></li>
         <li><a href="#demo">Live Demo</a></li>
-        <li><a href="#gmail-vs-titan">Gmail vs Titan</a></li>
+        <li><a href="#limitations">Limitations</a></li>
+        <li><a href="#auth">Auth</a></li>
+        <li><a href="#why-tracking-fails">Why Tracking Fails</a></li>
       </ul>
     </nav>
 
@@ -697,6 +697,76 @@
         style="text-decoration: none; display: inline-block"
         >Jump to Live Demo ↓</a
       >
+    </section>
+
+    <!-- METHODS -->
+    <section id="methods" style="max-width: 900px">
+      <div class="section-label">Approaches</div>
+      <h2>4 Tracking Methods</h2>
+      <p class="section-sub">
+        Industry standard approaches used by email platforms today.
+      </p>
+
+      <div class="card-grid">
+        <div class="card method-card">
+          <span class="tag tag-common">Most common</span>
+          <h3>🖼 Tracking Pixel</h3>
+          <p>
+            1×1 transparent GIF/PNG with a unique URL per email. Server logs
+            every fetch request. Used by Titan, Mailchimp, HubSpot, and
+            virtually every ESP.
+          </p>
+          <div class="pros-cons">
+            <span class="pro">✓ Silent, no user action needed</span>
+            <span class="pro">✓ Works in HTML emails</span>
+            <span class="con">✗ Blocked by Apple Mail Privacy</span>
+            <span class="con">✗ Image blocking defeats it</span>
+          </div>
+        </div>
+        <div class="card method-card">
+          <span class="tag tag-solid">Most reliable</span>
+          <h3>🔗 Link Tracking</h3>
+          <p>
+            Every link is redirected through a tracking URL. A click
+            definitively confirms the email was read. Used alongside pixel
+            tracking.
+          </p>
+          <div class="pros-cons">
+            <span class="pro">✓ Confirms real engagement</span>
+            <span class="pro">✓ Not blocked by privacy tools</span>
+            <span class="con">✗ Only fires on actual clicks</span>
+            <span class="con">✗ URL rewriting looks suspicious</span>
+          </div>
+        </div>
+        <div class="card method-card">
+          <span class="tag tag-manual">Opt-in only</span>
+          <h3>📨 Read Receipts (MDN)</h3>
+          <p>
+            Standard email protocol (Message Disposition Notification). Asks the
+            client to send a read confirmation. Requires recipient approval.
+          </p>
+          <div class="pros-cons">
+            <span class="pro">✓ Explicit consent built in</span>
+            <span class="pro">✓ Protocol-standard</span>
+            <span class="con">✗ Disabled by default in most clients</span>
+            <span class="con">✗ Recipient sees the request</span>
+          </div>
+        </div>
+        <div class="card method-card">
+          <span class="tag tag-fragile">Advanced / fragile</span>
+          <h3>🎨 CSS / Font Requests</h3>
+          <p>
+            Loading external CSS files or web fonts triggers HTTP requests. Less
+            reliable — most clients strip external CSS or cache aggressively.
+          </p>
+          <div class="pros-cons">
+            <span class="pro">✓ Harder to block than pixels</span>
+            <span class="con">✗ Stripped by Gmail, Outlook</span>
+            <span class="con">✗ Inconsistent across clients</span>
+            <span class="con">✗ Not worth the complexity</span>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- HOW IT WORKS -->
@@ -804,71 +874,95 @@
       </div>
     </section>
 
-    <!-- METHODS -->
-    <section id="methods" style="max-width: 900px">
-      <div class="section-label">Approaches</div>
-      <h2>4 Tracking Methods</h2>
+    <!-- CURRENT SETUP -->
+    <section id="setup" style="max-width: 900px">
+      <div class="section-label">Configuration</div>
+      <h2>Current Demo Setup</h2>
       <p class="section-sub">
-        Industry standard approaches used by email platforms today.
+        This server's current configuration. All tracking events are written to
+        <code style="background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; font-size: 12px;">tracker.log</code>
+        and streamed live below.
       </p>
 
-      <div class="card-grid">
-        <div class="card method-card">
-          <span class="tag tag-common">Most common</span>
-          <h3>🖼 Tracking Pixel</h3>
-          <p>
-            1×1 transparent GIF/PNG with a unique URL per email. Server logs
-            every fetch request. Used by Titan, Mailchimp, HubSpot, and
-            virtually every ESP.
-          </p>
-          <div class="pros-cons">
-            <span class="pro">✓ Silent, no user action needed</span>
-            <span class="pro">✓ Works in HTML emails</span>
-            <span class="con">✗ Blocked by Apple Mail Privacy</span>
-            <span class="con">✗ Image blocking defeats it</span>
-          </div>
+      <div class="card" style="margin-bottom: 1rem">
+        <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; font-size: 13px; font-family: var(--mono)">
+          <span style="color: var(--muted)">Server</span>
+          <span>Express · Node.js <span id="setup-node">—</span></span>
+          <span style="color: var(--muted)">Port</span>
+          <span id="setup-port">—</span>
+          <span style="color: var(--muted)">Base URL</span>
+          <span id="setup-baseurl">—</span>
+          <span style="color: var(--muted)">Log file</span>
+          <span><code>tracker.log</code> (appends on every event)</span>
+          <span style="color: var(--muted)">SMTP</span>
+          <span id="setup-smtp">—</span>
         </div>
-        <div class="card method-card">
-          <span class="tag tag-solid">Most reliable</span>
-          <h3>🔗 Link Tracking</h3>
+      </div>
+
+      <div class="card" style="font-size: 13px; color: var(--muted); line-height: 1.8">
+        <strong style="color: var(--text)">How to test this demo:</strong><br>
+        1. Enter an email address below and click <strong style="color: var(--text)">"Send tracked email"</strong><br>
+        2. If using Ethereal, click the preview URL to view the email in a browser<br>
+        3. Opening the email triggers the tracking pixel → the server logs it<br>
+        4. Or click <strong style="color: var(--text)">"Simulate open"</strong> to trigger a fake open event instantly<br>
+        5. Watch the live log terminal below — every event is also written to <code>tracker.log</code>
+      </div>
+    </section>
+
+    <!-- LIVE DEMO -->
+    <section id="demo" style="max-width: 900px; padding-bottom: 4rem">
+      <div class="section-label">Live Demo</div>
+      <h2>Try It Right Now</h2>
+      <p class="section-sub">
+        Send a tracked email and watch the open event fire in real time below.
+      </p>
+
+      <div class="demo-card">
+        <div class="demo-header">
+          <h2>Send a tracked email</h2>
           <p>
-            Every link is redirected through a tracking URL. A click
-            definitively confirms the email was read. Used alongside pixel
-            tracking.
+            Enter any email address. When the email is opened, the live log will
+            fire.
           </p>
-          <div class="pros-cons">
-            <span class="pro">✓ Confirms real engagement</span>
-            <span class="pro">✓ Not blocked by privacy tools</span>
-            <span class="con">✗ Only fires on actual clicks</span>
-            <span class="con">✗ URL rewriting looks suspicious</span>
-          </div>
         </div>
-        <div class="card method-card">
-          <span class="tag tag-manual">Opt-in only</span>
-          <h3>📨 Read Receipts (MDN)</h3>
-          <p>
-            Standard email protocol (Message Disposition Notification). Asks the
-            client to send a read confirmation. Requires recipient approval.
-          </p>
-          <div class="pros-cons">
-            <span class="pro">✓ Explicit consent built in</span>
-            <span class="pro">✓ Protocol-standard</span>
-            <span class="con">✗ Disabled by default in most clients</span>
-            <span class="con">✗ Recipient sees the request</span>
-          </div>
+
+        <div class="send-row">
+          <input
+            type="email"
+            id="email-input"
+            placeholder="recipient@gmail.com"
+          />
+          <select id="sender-select" class="sender-select">
+            <option value="ethereal">Ethereal (Test)</option>
+            <option value="gmail">Gmail (Real SMTP)</option>
+          </select>
+          <button class="btn btn-primary" id="send-btn" onclick="sendEmail()">
+            Send tracked email
+          </button>
+          <button class="btn btn-ghost" onclick="simulateOpen()">
+            Simulate open
+          </button>
         </div>
-        <div class="card method-card">
-          <span class="tag tag-fragile">Advanced / fragile</span>
-          <h3>🎨 CSS / Font Requests</h3>
-          <p>
-            Loading external CSS files or web fonts triggers HTTP requests. Less
-            reliable — most clients strip external CSS or cache aggressively.
-          </p>
-          <div class="pros-cons">
-            <span class="pro">✓ Harder to block than pixels</span>
-            <span class="con">✗ Stripped by Gmail, Outlook</span>
-            <span class="con">✗ Inconsistent across clients</span>
-            <span class="con">✗ Not worth the complexity</span>
+
+        <div id="send-result">
+          <div id="send-result-inner"></div>
+        </div>
+
+        <div class="log-header">
+          <span class="log-title">Server log</span>
+          <span class="live-dot" id="log-status-dot"></span>
+          <span class="live-label" id="log-status-label">LIVE</span>
+          <button
+            class="btn btn-ghost"
+            style="font-size: 11px; padding: 4px 10px; margin-left: 8px"
+            onclick="clearLogs()"
+          >
+            Clear
+          </button>
+        </div>
+        <div id="log-terminal">
+          <div class="log-empty">
+            Waiting for events… send an email or click "Simulate open"
           </div>
         </div>
       </div>
@@ -1018,130 +1112,36 @@
       </div>
     </section>
 
-    <!-- CURRENT SETUP -->
-    <section id="setup" style="max-width: 900px">
-      <div class="section-label">Configuration</div>
-      <h2>Current Demo Setup</h2>
+    <!-- WHY TRACKING FAILS -->
+    <section id="why-tracking-fails" style="max-width: 900px">
+      <div class="section-label">Why Tracking Fails</div>
+      <h2>Why Localhost, Render & Vercel Can't Track Opens</h2>
       <p class="section-sub">
-        This server's current configuration. All tracking events are written to
-        <code style="background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; font-size: 12px;">tracker.log</code>
-        and streamed live below.
-      </p>
-
-      <div class="card" style="margin-bottom: 1rem">
-        <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; font-size: 13px; font-family: var(--mono)">
-          <span style="color: var(--muted)">Server</span>
-          <span>Express · Node.js <span id="setup-node">—</span></span>
-          <span style="color: var(--muted)">Port</span>
-          <span id="setup-port">—</span>
-          <span style="color: var(--muted)">Base URL</span>
-          <span id="setup-baseurl">—</span>
-          <span style="color: var(--muted)">Log file</span>
-          <span><code>tracker.log</code> (appends on every event)</span>
-          <span style="color: var(--muted)">SMTP</span>
-          <span id="setup-smtp">—</span>
-        </div>
-      </div>
-
-      <div class="card" style="font-size: 13px; color: var(--muted); line-height: 1.8">
-        <strong style="color: var(--text)">How to test this demo:</strong><br>
-        1. Enter an email address below and click <strong style="color: var(--text)">"Send tracked email"</strong><br>
-        2. If using Ethereal, click the preview URL to view the email in a browser<br>
-        3. Opening the email triggers the tracking pixel → the server logs it<br>
-        4. Or click <strong style="color: var(--text)">"Simulate open"</strong> to trigger a fake open event instantly<br>
-        5. Watch the live log terminal below — every event is also written to <code>tracker.log</code>
-      </div>
-    </section>
-
-    <!-- LIVE DEMO -->
-    <section id="demo" style="max-width: 900px; padding-bottom: 4rem">
-      <div class="section-label">Live Demo</div>
-      <h2>Try It Right Now</h2>
-      <p class="section-sub">
-        Send a tracked email and watch the open event fire in real time below.
-      </p>
-
-      <div class="demo-card">
-        <div class="demo-header">
-          <h2>Send a tracked email</h2>
-          <p>
-            Enter any email address. When the email is opened, the live log will
-            fire.
-          </p>
-        </div>
-
-        <div class="send-row">
-          <input
-            type="email"
-            id="email-input"
-            placeholder="recipient@gmail.com"
-          />
-          <select id="sender-select" class="sender-select">
-            <option value="ethereal">Ethereal (Test)</option>
-            <option value="gmail">Gmail (Real SMTP)</option>
-          </select>
-          <button class="btn btn-primary" id="send-btn" onclick="sendEmail()">
-            Send tracked email
-          </button>
-          <button class="btn btn-ghost" onclick="simulateOpen()">
-            Simulate open
-          </button>
-        </div>
-
-        <div id="send-result">
-          <div id="send-result-inner"></div>
-        </div>
-
-        <div class="log-header">
-          <span class="log-title">Live server log</span>
-          <span class="live-dot"></span>
-          <span class="live-label">LIVE</span>
-          <button
-            class="btn btn-ghost"
-            style="font-size: 11px; padding: 4px 10px; margin-left: 8px"
-            onclick="clearLogs()"
-          >
-            Clear
-          </button>
-        </div>
-        <div id="log-terminal">
-          <div class="log-empty">
-            Waiting for events… send an email or click "Simulate open"
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- GMAIL VS TITAN / LOCALHOST -->
-    <section id="gmail-vs-titan" style="max-width: 900px">
-      <div class="section-label">Why Localhost Fails</div>
-      <h2>Gmail vs Titan: The Key Difference</h2>
-      <p class="section-sub">
-        This is exactly why your localhost pixel returned 404 — and how Titan
-        avoids it.
+        Gmail's image proxy blocks images from unknown or untrusted domains —
+        your pixel never gets fetched.
       </p>
 
       <div class="compare-grid">
         <div class="compare-card bad">
-          <h3>❌ Your localhost setup</h3>
+          <h3>❌ Your local / cloud deployment</h3>
           <div class="url-pill">http://localhost:3000/pixel/abc123</div>
           <ul>
-            <li>Only reachable on your machine</li>
-            <li>Gmail proxy can't reach it</li>
-            <li>ngrok free tier gets throttled</li>
-            <li>URL resets on every restart</li>
-            <li>Google rejects non-standard domains</li>
+            <li>Localhost is unreachable from the internet</li>
+            <li>Render/Vercel free domains are not trusted by Gmail</li>
+            <li>Gmail proxy refuses to fetch from unknown origins</li>
+            <li>No valid TLS or trusted certificate chain</li>
+            <li>Dynamic IPs and domains trigger spam filters</li>
           </ul>
         </div>
         <div class="compare-card good">
-          <h3>✅ Titan's production setup</h3>
-          <div class="url-pill">https://track.titan.email/pixel/abc123</div>
+          <h3>✅ Production setup (proper domain)</h3>
+          <div class="url-pill">https://track.yourdomain.com/pixel/abc123</div>
           <ul>
             <li>Permanent, public HTTPS domain</li>
-            <li>Gmail proxy can reach it 24/7</li>
-            <li>Trusted domain, no blocks</li>
-            <li>Always-on infrastructure</li>
-            <li>Valid TLS certificate</li>
+            <li>Gmail proxy trusts and fetches from it</li>
+            <li>Valid TLS certificate (Let's Encrypt, etc.)</li>
+            <li>Proper DNS with SPF/DKIM/DMARC configured</li>
+            <li>Domain reputation built over time</li>
           </ul>
         </div>
       </div>
@@ -1162,9 +1162,9 @@
           >). When a recipient opens your email,
           <strong style="color: var(--text)">Google's servers</strong> fetch the
           pixel — not the recipient's device. This means your pixel server must
-          be publicly reachable from the internet with a valid HTTPS URL. This
-          is also why Gmail sometimes shows "opened" before the recipient even
-          looks — Google pre-fetches images for spam scanning.
+          be publicly reachable with a valid HTTPS URL and a domain that Gmail
+          trusts. Free-tier Render, Vercel, and localhost all fail this check —
+          which is why your pixel returns a 404 or is never fetched at all.
         </p>
       </div>
     </section>
@@ -1203,14 +1203,45 @@
         })
         .catch(() => {});
 
-      // ── SSE connection ──────────────────────────────────────────────────────────
-      const evtSource = new EventSource("/logs/stream");
-      evtSource.onmessage = (e) => {
-        try {
-          const entry = JSON.parse(e.data);
-          addLogLine(entry);
-        } catch (_) {}
-      };
+      // ── Detect environment ──────────────────────────────────────────────────────
+      const isVercel = window.location.hostname.includes("vercel.app");
+
+      // ── SSE connection (falls back to polling on Vercel) ────────────────────────
+      if (isVercel) {
+        document.getElementById("log-status-dot").style.background = "var(--amber)";
+        document.getElementById("log-status-label").textContent = "POLLING";
+        fetch("/stats")
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.recentEvents) {
+              d.recentEvents.forEach((entry) => addLogLine(entry));
+            }
+          })
+          .catch(() => {});
+        setInterval(() => {
+          fetch("/stats")
+            .then((r) => r.json())
+            .then((d) => {
+              if (d.recentEvents && d.recentEvents.length) {
+                const lastKnown = logLines.length
+                  ? logLines[logLines.length - 1].dataset.ts
+                  : 0;
+                d.recentEvents.forEach((entry) => {
+                  if (entry.ts > Number(lastKnown)) addLogLine(entry);
+                });
+              }
+            })
+            .catch(() => {});
+        }, 2000);
+      } else {
+        const evtSource = new EventSource("/logs/stream");
+        evtSource.onmessage = (e) => {
+          try {
+            const entry = JSON.parse(e.data);
+            addLogLine(entry);
+          } catch (_) {}
+        };
+      }
 
       // ── Render a log entry ──────────────────────────────────────────────────────
       function addLogLine(entry) {
@@ -1243,6 +1274,7 @@
 
         const line = document.createElement("div");
         line.className = "log-line";
+        line.dataset.ts = entry.ts;
         line.innerHTML = `
       <span class="log-time">${time}</span>
       <span class="log-type ${type}">${type}</span>

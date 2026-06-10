@@ -1112,60 +1112,64 @@
       </div>
     </section>
 
-    <!-- WHY TRACKING FAILS -->
-    <section id="why-tracking-fails" style="max-width: 900px">
-      <div class="section-label">Why Tracking Fails</div>
-      <h2>Why Localhost, Render & Vercel Can't Track Opens</h2>
+    <!-- PREFETCH VS REAL OPEN -->
+    <section id="prefetch-vs-real" style="max-width: 900px">
+      <div class="section-label">Prefetch vs Real Open</div>
+      <h2>Identifying Google's Prefetch Requests</h2>
       <p class="section-sub">
-        Gmail's image proxy blocks images from unknown or untrusted domains —
-        your pixel never gets fetched.
+        Tracking works — but Google prefetches images before the user actually opens the email.
+        Here's how to tell the difference.
       </p>
+
+      <div class="card" style="margin-bottom: 1rem">
+        <h3 style="margin-bottom: 10px">🤖 The Two Requests</h3>
+        <p style="font-size: 13px; color: var(--muted); line-height: 1.8">
+          When you send a tracked email to Gmail, you will see <strong style="color: var(--text)">two pixel requests</strong>:
+        </p>
+        <ul style="font-size: 13px; color: var(--muted); line-height: 2; margin-top: 8px; list-style: none; padding-left: 0;">
+          <li><strong style="color: var(--accent3)">① Prefetch (seconds after send)</strong> — Google's spam & security scanners fetch the image immediately to check it. The User-Agent looks like a real browser: <code style="background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; font-size: 11px;">Mozilla/5.0 ... Chrome/42.0.2311.135 Safari/537.36 Edge</code></li>
+          <li style="margin-top: 8px;"><strong style="color: var(--accent2)">② Real open (when user reads)</strong> — The actual recipient opens the email. The User-Agent shows Google's Image Proxy: <code style="background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; font-size: 11px;">Mozilla/5.0 ... Firefox/11.0 (via ggpht.com GoogleImageProxy)</code></li>
+        </ul>
+      </div>
 
       <div class="compare-grid">
         <div class="compare-card bad">
-          <h3>❌ Your local / cloud deployment</h3>
-          <div class="url-pill">http://localhost:3000/pixel/abc123</div>
+          <h3>⏱ Prefetch (automated)</h3>
+          <div class="url-pill" style="font-size: 10px">User-Agent: Chrome/42 ... Edge</div>
           <ul>
-            <li>Localhost is unreachable from the internet</li>
-            <li>Render/Vercel free domains are not trusted by Gmail</li>
-            <li>Gmail proxy refuses to fetch from unknown origins</li>
-            <li>No valid TLS or trusted certificate chain</li>
-            <li>Dynamic IPs and domains trigger spam filters</li>
+            <li>Fires within seconds of sending</li>
+            <li>Comes from Google's IP range</li>
+            <li>Chrome 42 User-Agent (very old — a tell)</li>
+            <li>No real person behind it</li>
+            <li>Inflates your open count with false positives</li>
           </ul>
         </div>
         <div class="compare-card good">
-          <h3>✅ Production setup (proper domain)</h3>
-          <div class="url-pill">https://track.yourdomain.com/pixel/abc123</div>
+          <h3>👤 Real Open (genuine)</h3>
+          <div class="url-pill" style="font-size: 10px">User-Agent: Firefox/11.0 (via ggpht.com GoogleImageProxy)</div>
           <ul>
-            <li>Permanent, public HTTPS domain</li>
-            <li>Gmail proxy trusts and fetches from it</li>
-            <li>Valid TLS certificate (Let's Encrypt, etc.)</li>
-            <li>Proper DNS with SPF/DKIM/DMARC configured</li>
-            <li>Domain reputation built over time</li>
+            <li>Fires when the user actually reads the email</li>
+            <li>Comes from ggpht.com (Google's image proxy)</li>
+            <li>Via header or User-Agent contains "GoogleImageProxy"</li>
+            <li>This is the signal you want to count</li>
+            <li>Delayed relative to send time (minutes/hours later)</li>
           </ul>
         </div>
       </div>
 
       <div class="card" style="margin-top: 1rem">
-        <h3 style="margin-bottom: 10px">🔍 How Gmail's Image Proxy works</h3>
+        <h3 style="margin-bottom: 10px">🔬 How to Filter Prefetches (Heuristics)</h3>
         <p style="font-size: 13px; color: var(--muted); line-height: 1.8">
-          Since 2013, Gmail routes
-          <strong style="color: var(--text)">all images</strong> through
-          Google's own proxy servers (<code
-            style="
-              background: rgba(255, 255, 255, 0.06);
-              padding: 1px 6px;
-              border-radius: 4px;
-              font-size: 11px;
-            "
-            >ci3.googleusercontent.com</code
-          >). When a recipient opens your email,
-          <strong style="color: var(--text)">Google's servers</strong> fetch the
-          pixel — not the recipient's device. This means your pixel server must
-          be publicly reachable with a valid HTTPS URL and a domain that Gmail
-          trusts. Free-tier Render, Vercel, and localhost all fail this check —
-          which is why your pixel returns a 404 or is never fetched at all.
+          There is no official Google header that says "this is a prefetch", but you can approximate:
         </p>
+        <ul style="font-size: 13px; color: var(--muted); line-height: 2; margin-top: 8px; padding-left: 20px;">
+          <li><strong style="color: var(--text)">Timing heuristic:</strong> If the pixel request arrives &lt; 5–10 seconds after the email was sent, it is almost certainly a prefetch. Real users don't open emails that fast.</li>
+          <li><strong style="color: var(--text)">User-Agent heuristic:</strong> The presence of <code style="background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; font-size: 11px;">via ggpht.com GoogleImageProxy</code> or <code style="background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; font-size: 11px;">GoogleImageProxy</code> in the User-Agent strongly suggests a real open routed through the proxy. Its absence (and a generic Chrome UA) suggests a prefetch.</li>
+          <li><strong style="color: var(--text)">Combined approach:</strong> Use both together — if the request arrives within 10 seconds AND has a generic Chrome UA without "GoogleImageProxy", classify it as prefetch and exclude it from your open count.</li>
+        </ul>
+        <div style="margin-top: 12px; padding: 10px; background: rgba(255, 107, 107, 0.06); border-radius: 8px; font-size: 12px; color: var(--muted); line-height: 1.7;">
+          <strong style="color: var(--accent3)">⚠ Important:</strong> These heuristics are not 100% reliable. Google may change their User-Agent strings or proxy behavior at any time. Some corporate proxies or VPNs may also match these patterns. Always treat open tracking as an <em>approximate signal</em>, not an exact metric.
+        </div>
       </div>
     </section>
 

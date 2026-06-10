@@ -4,7 +4,7 @@
   "description": "Email open tracker with pixel tracking",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "nodemon server.js"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -16,6 +16,7 @@
     "chalk": "^4.1.2",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "nodemailer": "^8.0.10"
+    "nodemailer": "^8.0.10",
+    "nodemon": "^3.1.14"
   }
 }
